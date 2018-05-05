@@ -1238,6 +1238,7 @@ impl ToDebugString for SpecificDisplayItem {
             SpecificDisplayItem::SetGradientStops => String::from("set_gradient_stops"),
             SpecificDisplayItem::StickyFrame(..) => String::from("sticky_frame"),
             SpecificDisplayItem::Text(..) => String::from("text"),
+            SpecificDisplayItem::Svg(..) => String::from("svg"),
             SpecificDisplayItem::YuvImage(..) => String::from("yuv_image"),
         }
     }

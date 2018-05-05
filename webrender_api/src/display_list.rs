@@ -487,6 +487,7 @@ impl Serialize for BuiltDisplayList {
                     SpecificDisplayItem::BoxShadow(v) => BoxShadow(v),
                     SpecificDisplayItem::Gradient(v) => Gradient(v),
                     SpecificDisplayItem::RadialGradient(v) => RadialGradient(v),
+                    SpecificDisplayItem::Svg(v) => Svg(v),
                     SpecificDisplayItem::Iframe(v) => Iframe(v),
                     SpecificDisplayItem::PushStackingContext(v) => PushStackingContext(
                         v,
@@ -561,6 +562,7 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                     },
                     Image(specific_item) => SpecificDisplayItem::Image(specific_item),
                     YuvImage(specific_item) => SpecificDisplayItem::YuvImage(specific_item),
+                    Svg(specific_item) => SpecificDisplayItem::Svg(specific_item),
                     Border(specific_item) => SpecificDisplayItem::Border(specific_item),
                     BoxShadow(specific_item) => SpecificDisplayItem::BoxShadow(specific_item),
                     Gradient(specific_item) => SpecificDisplayItem::Gradient(specific_item),

@@ -833,6 +833,11 @@ impl YamlFrameWriter {
                     // TODO
                     println!("TODO YAML YuvImage");
                 }
+                Svg(_) => {
+                    str_node(&mut v, "type", "svg");
+                    // TODO
+                    println!("TODO YAML SVG");
+                }
                 Border(item) => {
                     str_node(&mut v, "type", "border");
                     match item.details {

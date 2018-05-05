@@ -11,7 +11,8 @@ use api::{IframeDisplayItem, ImageKey, ImageRendering, ItemRange, LayoutPoint};
 use api::{LayoutPrimitiveInfo, LayoutRect, LayoutSize, LayoutTransform, LayoutVector2D};
 use api::{LineOrientation, LineStyle, LocalClip, NinePatchBorderSource, PipelineId};
 use api::{PropertyBinding, ReferenceFrame, RepeatMode, ScrollFrameDisplayItem, ScrollSensitivity};
-use api::{Shadow, SpecificDisplayItem, StackingContext, StickyFrameDisplayItem, TexelRect};
+use api::{Shadow, SpecificDisplayItem, StackingContext, StickyFrameDisplayItem};
+use api::{SvgDisplayItem, TexelRect};
 use api::{TransformStyle, YuvColorSpace, YuvData};
 use clip::{ClipRegion, ClipSource, ClipSources, ClipStore};
 use clip_scroll_tree::{ClipChainIndex, ClipNodeIndex, ClipScrollTree, SpatialNodeIndex};
@@ -512,6 +513,78 @@ impl<'a> DisplayListFlattener<'a> {
         self.pop_stacking_context();
     }
 
+    fn flatten_svg(
+        &mut self,
+        clip_and_scroll: ScrollNodeAndClipChain,
+        item: &DisplayItemRef,
+        info: &SvgDisplayItem
+    ) {
+        let svg_pipeline_id = info.pipeline_id;
+        let pipeline = match self.scene.pipelines.get(&svg_pipeline_id) {
+            Some(pipeline) => pipeline,
+            None => {
+                //TODO: assert/debug_assert?
+                error!("Unknown pipeline used for svg {:?}", info);
+                return
+            },
+        };
+
+        // self.id_to_index_mapper.initialize_for_pipeline(pipeline);
+        let epoch = self.scene.pipeline_epochs[&svg_pipeline_id];
+        self.pipeline_epochs.push((svg_pipeline_id, epoch));
+
+        let bounds = item.rect();
+        let svg_rect = LayoutRect::new(LayoutPoint::zero(), bounds.size);
+        let current_reference_frame_index = self.current_reference_frame_index();
+
+        let pic_index = self.prim_store.add_image_picture(
+            None,
+            false,
+            svg_pipeline_id,
+            current_reference_frame_index,
+            Some(svg_pipeline_id),
+            true
+        );
+
+        let prim = BrushPrimitive::new_picture(pic_index);
+        let prim_index = self.prim_store.add_primitive(
+            &LayoutRect::zero(),
+            &LayoutRect::zero(),
+            false,
+            None,
+            None,
+            PrimitiveContainer::Brush(prim),
+        );
+
+        {
+            let parent_pic_index = *self.picture_stack.last().unwrap();
+            let parent_pic = &mut self.prim_store.pictures[parent_pic_index.0];
+            parent_pic.add_primitive(prim_index, clip_and_scroll);
+        }
+
+        self.picture_stack.push(pic_index);
+
+        if let Some(bg_color) = pipeline.background_color {
+            let info = LayoutPrimitiveInfo::new(svg_rect);
+            self.add_solid_rectangle(
+                clip_and_scroll,
+                &info,
+                bg_color,
+                None,
+                Vec::new(),
+            );
+        }
+
+        self.flatten_items(
+            &mut pipeline.display_list.iter(),
+            svg_pipeline_id,
+            LayoutVector2D::zero()
+        );
+        
+        self.picture_stack.pop();
+
+    }
+
     fn flatten_iframe(
         &mut self,
         item: &DisplayItemRef,
@@ -719,6 +792,13 @@ impl<'a> DisplayListFlattener<'a> {
                     info,
                     &clip_and_scroll_ids,
                     &reference_frame_relative_offset
+                );
+            }
+            SpecificDisplayItem::Svg(ref info) => {
+                self.flatten_svg(
+                    clip_and_scroll,
+                    &item,
+                    info,
                 );
             }
             SpecificDisplayItem::Clip(ref info) => {

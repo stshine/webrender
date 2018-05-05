@@ -101,6 +101,7 @@ pub enum SpecificDisplayItem {
     Text(TextDisplayItem),
     Image(ImageDisplayItem),
     YuvImage(YuvImageDisplayItem),
+    Svg(SvgDisplayItem),
     Border(BorderDisplayItem),
     BoxShadow(BoxShadowDisplayItem),
     Gradient(GradientDisplayItem),
@@ -137,6 +138,7 @@ pub enum CompletelySpecificDisplayItem {
     BoxShadow(BoxShadowDisplayItem),
     Gradient(GradientDisplayItem),
     RadialGradient(RadialGradientDisplayItem),
+    Svg(SvgDisplayItem),
     Iframe(IframeDisplayItem),
     PushStackingContext(PushStackingContextDisplayItem, Vec<FilterOp>),
     PopStackingContext,
@@ -549,6 +551,11 @@ pub struct IframeDisplayItem {
     pub clip_id: ClipId,
     pub pipeline_id: PipelineId,
     pub ignore_missing_pipeline: bool,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+pub struct SvgDisplayItem {
+    pub pipeline_id: PipelineId,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
