@@ -6,7 +6,7 @@
 use GlyphInstance;
 use euclid::{SideOffsets2D, TypedRect};
 use std::ops::Not;
-use {ColorF, FontInstanceKey, GlyphOptions, ImageKey, LayoutPixel, LayoutPoint};
+use {ColorF, FontInstanceKey, GlyphOptions, ImageKey, LayoutPixel, LayoutPoint, PathKey};
 use {LayoutRect, LayoutSize, LayoutTransform, LayoutVector2D, PipelineId, PropertyBinding};
 
 
@@ -97,6 +97,7 @@ pub enum SpecificDisplayItem {
     StickyFrame(StickyFrameDisplayItem),
     Rectangle(RectangleDisplayItem),
     ClearRectangle,
+    Path(PathDisplayItem),
     Line(LineDisplayItem),
     Text(TextDisplayItem),
     Image(ImageDisplayItem),
@@ -130,6 +131,7 @@ pub enum CompletelySpecificDisplayItem {
     StickyFrame(StickyFrameDisplayItem),
     Rectangle(RectangleDisplayItem),
     ClearRectangle,
+    Path(PathDisplayItem),
     Line(LineDisplayItem),
     Text(TextDisplayItem, Vec<GlyphInstance>),
     Image(ImageDisplayItem),
@@ -247,6 +249,11 @@ pub enum LineStyle {
     Dotted,
     Dashed,
     Wavy,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+pub struct PathDisplayItem {
+    pub path_key: PathKey,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]

@@ -448,6 +448,12 @@ impl ResourceCache {
                 ResourceUpdate::DeleteImage(img) => {
                     self.delete_image_template(img);
                 }
+                ResourceUpdate::UpdatePath(update) => {
+                    // FIXME: Implement this!
+                }
+                ResourceUpdate::DeletePath(path) => {
+                    // FIXME: Implement this!
+                }
                 ResourceUpdate::AddFont(font) => match font {
                     AddFont::Raw(id, bytes, index) => {
                         profile_counters.font_templates.inc(bytes.len());

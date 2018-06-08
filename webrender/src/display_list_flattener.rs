@@ -697,6 +697,9 @@ impl<'a> DisplayListFlattener<'a> {
                     &prim_info,
                 );
             }
+            SpecificDisplayItem::Path(ref info) => {
+                //FIXME: Implement this!
+            }
             SpecificDisplayItem::Line(ref info) => {
                 self.add_line(
                     clip_and_scroll,

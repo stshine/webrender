@@ -157,6 +157,12 @@ impl JsonFrameWriter {
                 ResourceUpdate::DeleteImage(img) => {
                     self.images.remove(&img);
                 }
+                ResourceUpdate::UpdatePath(ref update) => {
+                    // FIXME: Implement this!
+                }
+                ResourceUpdate::DeletePath(path) => {
+                    // FIXME: Implement this!
+                }
                 ResourceUpdate::AddFont(ref font) => match font {
                     &AddFont::Raw(key, ref bytes, index) => {
                         self.fonts

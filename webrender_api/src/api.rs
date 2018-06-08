@@ -16,6 +16,7 @@ use {DeviceUintSize, ExternalScrollId, FontInstanceKey, FontInstanceOptions};
 use {FontInstancePlatformOptions, FontKey, FontVariation, GlyphDimensions, GlyphIndex, ImageData};
 use {ImageDescriptor, ImageKey, ItemTag, LayoutPoint, LayoutSize, LayoutTransform, LayoutVector2D};
 use {NativeFontHandle, WorldPoint};
+pub use lyon_path::default::Path;
 
 pub type TileSize = u16;
 /// Documents are rendered in the ascending order of their associated layer values.
@@ -26,6 +27,8 @@ pub enum ResourceUpdate {
     AddImage(AddImage),
     UpdateImage(UpdateImage),
     DeleteImage(ImageKey),
+    UpdatePath(UpdatePath),
+    DeletePath(PathKey),
     AddFont(AddFont),
     DeleteFont(FontKey),
     AddFontInstance(AddFontInstance),
@@ -398,6 +401,12 @@ pub struct UpdateImage {
 }
 
 #[derive(Clone, Deserialize, Serialize)]
+pub struct UpdatePath {
+    pub key: PathKey,
+    pub data: Path,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
 pub enum AddFont {
     Raw(
         FontKey,
@@ -681,6 +690,9 @@ impl PipelineId {
     }
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+pub struct PathKey(pub IdNamespace, pub u32);
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]

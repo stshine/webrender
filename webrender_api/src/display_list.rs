@@ -476,6 +476,7 @@ impl Serialize for BuiltDisplayList {
                     SpecificDisplayItem::StickyFrame(v) => StickyFrame(v),
                     SpecificDisplayItem::Rectangle(v) => Rectangle(v),
                     SpecificDisplayItem::ClearRectangle => ClearRectangle,
+                    SpecificDisplayItem::Path(v) => Path(v),
                     SpecificDisplayItem::Line(v) => Line(v),
                     SpecificDisplayItem::Text(v) => Text(
                         v,
@@ -555,6 +556,7 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                     }
                     Rectangle(specific_item) => SpecificDisplayItem::Rectangle(specific_item),
                     ClearRectangle => SpecificDisplayItem::ClearRectangle,
+                    Path(specific_item) => SpecificDisplayItem::Path(specific_item),
                     Line(specific_item) => SpecificDisplayItem::Line(specific_item),
                     Text(specific_item, glyphs) => {
                         DisplayListBuilder::push_iter_impl(&mut temp, glyphs);

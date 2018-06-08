@@ -1225,6 +1225,7 @@ impl ToDebugString for SpecificDisplayItem {
             SpecificDisplayItem::Gradient(..) => String::from("gradient"),
             SpecificDisplayItem::Iframe(..) => String::from("iframe"),
             SpecificDisplayItem::Image(..) => String::from("image"),
+            SpecificDisplayItem::Path(..) => String::from("path"),
             SpecificDisplayItem::Line(..) => String::from("line"),
             SpecificDisplayItem::PopAllShadows => String::from("pop_all_shadows"),
             SpecificDisplayItem::PopReferenceFrame => String::from("pop_reference_frame"),

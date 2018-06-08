@@ -21,6 +21,7 @@ extern crate dwrote;
 extern crate euclid;
 #[cfg(feature = "ipc")]
 extern crate ipc_channel;
+extern crate lyon_path;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
