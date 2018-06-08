@@ -11,6 +11,7 @@ use api::{FontInstanceOptions, FontInstancePlatformOptions, FontVariation};
 use api::{GlyphDimensions, IdNamespace};
 use api::{ImageData, ImageDescriptor, ImageKey, ImageRendering};
 use api::{TileOffset, TileSize};
+use api::{Path, PathKey};
 use app_units::Au;
 #[cfg(feature = "capture")]
 use capture::ExternalCaptureImage;
@@ -340,9 +341,12 @@ impl BlobImageResources for Resources {
 
 pub type GlyphDimensionsCache = FastHashMap<(FontInstance, GlyphIndex), Option<GlyphDimensions>>;
 
+pub type PathCache = FastHashMap<PathKey, Path>;
+
 pub struct ResourceCache {
     cached_glyphs: GlyphCache,
     cached_images: ImageCache,
+    cached_paths: PathCache,
     cached_render_tasks: RenderTaskCache,
 
     resources: Resources,
@@ -372,6 +376,7 @@ impl ResourceCache {
         ResourceCache {
             cached_glyphs: GlyphCache::new(),
             cached_images: ResourceClassCache::new(),
+            cached_paths: PathCache::default(),
             cached_render_tasks: RenderTaskCache::new(),
             resources: Resources::default(),
             cached_glyph_dimensions: FastHashMap::default(),
@@ -449,10 +454,10 @@ impl ResourceCache {
                     self.delete_image_template(img);
                 }
                 ResourceUpdate::UpdatePath(update) => {
-                    // FIXME: Implement this!
+                    self.cached_paths.insert(update.key, update.data);
                 }
                 ResourceUpdate::DeletePath(path) => {
-                    // FIXME: Implement this!
+                    self.cached_paths.remove(&path);
                 }
                 ResourceUpdate::AddFont(font) => match font {
                     AddFont::Raw(id, bytes, index) => {
