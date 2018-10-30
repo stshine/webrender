@@ -103,6 +103,7 @@ mod texture_allocator;
 mod texture_cache;
 mod tiling;
 mod util;
+mod vector_rasterizer;
 
 mod shader_source {
     include!(concat!(env!("OUT_DIR"), "/shaders.rs"));
@@ -176,6 +177,10 @@ extern crate image as image_loader;
 extern crate base64;
 #[cfg(all(feature = "capture", feature = "png"))]
 extern crate png;
+extern crate lyon_path;
+extern crate pathfinder_gfx_utils;
+extern crate pathfinder_partitioner;
+extern crate pathfinder_path_utils;
 
 pub extern crate webrender_api;
 

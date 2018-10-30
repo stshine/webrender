@@ -47,6 +47,7 @@ use scene_builder::SceneBuilder;
 use shade::Shaders;
 use render_task::{RenderTask, RenderTaskKind, RenderTaskTree};
 use resource_cache::ResourceCache;
+use vector_rasterizer::VectorRasterizer;
 
 use std;
 use std::cmp;
@@ -1349,6 +1350,7 @@ pub struct Renderer {
     shaders: Shaders,
 
     pub gpu_glyph_renderer: GpuGlyphRenderer,
+    pub vector_rasterizer: VectorRasterizer,
 
     max_texture_size: u32,
     max_recorded_profiles: usize,
@@ -1623,6 +1625,10 @@ impl Renderer {
                                                             &prim_vao,
                                                             options.precache_shaders));
 
+        let vector_rasterizer = VectorRasterizer::new(&mut device,
+                                                      &prim_vao,
+                                                      options.precache_shaders)?;
+
         let blur_vao = device.create_vao_with_new_instances(&desc::BLUR, &prim_vao);
         let clip_vao = device.create_vao_with_new_instances(&desc::CLIP, &prim_vao);
         let border_vao =
@@ -1783,6 +1789,7 @@ impl Renderer {
             last_time: 0,
             gpu_profile,
             gpu_glyph_renderer,
+            vector_rasterizer,
             vaos: RendererVAOs {
                 prim_vao,
                 blur_vao,
@@ -3305,6 +3312,8 @@ impl Renderer {
         // Handle any Pathfinder glyphs.
         let stencil_page = self.stencil_glyphs(&target.glyphs, &projection, &target_size, stats);
 
+        let stencil_vector = self.stencil_paths(&target.paths, &projection, &target_size, stats);
+
         {
             let texture = self.texture_resolver
                 .resolve(texture)
@@ -3367,6 +3376,10 @@ impl Renderer {
         // Blit any Pathfinder glyphs to the cache texture.
         if let Some(stencil_page) = stencil_page {
             self.cover_glyphs(stencil_page, &projection, stats);
+        }
+
+        if let Some(stencil_vector) = stencil_vector {
+            self.cover_paths(stencil_page, &projection, stats);
         }
     }
 

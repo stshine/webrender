@@ -17,7 +17,7 @@ use glyph_rasterizer::GpuGlyphCacheKey;
 use gpu_cache::{GpuCache, GpuCacheAddress, GpuCacheHandle};
 use gpu_types::{BorderInstance, ImageSource, RasterizationSpace, UvRectKind};
 use internal_types::{FastHashMap, SavedTargetIndex, SourceTexture};
-#[cfg(feature = "pathfinder")]
+// #[cfg(feature = "pathfinder")]
 use pathfinder_partitioner::mesh::Mesh;
 use picture::PictureCacheKey;
 use prim_store::{PrimitiveIndex, ImageCacheKey};
@@ -29,6 +29,7 @@ use std::{cmp, ops, usize, f32, i32};
 use texture_cache::{TextureCache, TextureCacheHandle};
 use tiling::{RenderPass, RenderTargetIndex};
 use tiling::{RenderTargetKind};
+use vector_rasterizer::PathsCacheKey;
 #[cfg(feature = "pathfinder")]
 use webrender_api::DevicePixel;
 
@@ -237,6 +238,14 @@ pub struct GlyphTask {
 #[cfg_attr(feature = "replay", derive(Deserialize))]
 pub struct GlyphTask;
 
+#[derive(Debug)]
+#[cfg_attr(feature = "capture", derive(Serialize))]
+#[cfg_attr(feature = "replay", derive(Deserialize))]
+pub struct PathsTask {
+    pub mesh: Vec<Mesh>,
+    pub origin: DeviceIntPoint,
+}
+
 // Where the source data for a blit task can be found.
 #[derive(Debug)]
 #[cfg_attr(feature = "capture", derive(Serialize))]
@@ -283,6 +292,7 @@ pub enum RenderTaskKind {
     HorizontalBlur(BlurTask),
     #[allow(dead_code)]
     Glyph(GlyphTask),
+    Paths(PathsTask),
     Readback(DeviceIntRect),
     Scaling(RenderTargetKind),
     Blit(BlitTask),
@@ -614,6 +624,22 @@ impl RenderTask {
                 subpixel_offset: *subpixel_offset,
                 render_mode: render_mode,
                 embolden_amount: *embolden_amount,
+            }),
+            clear_mode: ClearMode::Transparent,
+            saved_index: None,
+        }
+    }
+
+    pub fn new_paths(location: RenderTaskLocation,
+                     meshs: Vec<Mesh>,
+                     origin: &DeviceIntPoint,)
+                     -> Self {
+        RenderTask {
+            children: vec![],
+            location: location,
+            kind: RenderTaskKind::Paths(PathsTask {
+                meshs: meshs,
+                origin: *origin,
             }),
             clear_mode: ClearMode::Transparent,
             saved_index: None,
@@ -968,6 +994,7 @@ pub enum RenderTaskCacheKeyKind {
     Image(ImageCacheKey),
     #[allow(dead_code)]
     Glyph(GpuGlyphCacheKey),
+    Paths(PathsCacheKey),
     Picture(PictureCacheKey),
     Border(BorderCacheKey),
 }

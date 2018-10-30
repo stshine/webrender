@@ -11,7 +11,7 @@ use api::{IframeDisplayItem, ImageKey, ImageRendering, ItemRange, LayoutPoint};
 use api::{LayoutPrimitiveInfo, LayoutRect, LayoutSize, LayoutTransform, LayoutVector2D};
 use api::{LineOrientation, LineStyle, LocalClip, NinePatchBorderSource, PipelineId};
 use api::{PropertyBinding, ReferenceFrame, RepeatMode, ScrollFrameDisplayItem, ScrollSensitivity};
-use api::{Shadow, SpecificDisplayItem, StackingContext, StickyFrameDisplayItem};
+use api::{Shadow, Shape, ShapeKind, SpecificDisplayItem, StackingContext, StickyFrameDisplayItem};
 use api::{SvgDisplayItem, TexelRect};
 use api::{TransformStyle, YuvColorSpace, YuvData};
 use clip::{ClipRegion, ClipSource, ClipSources, ClipStore};
@@ -24,11 +24,13 @@ use gpu_types::BrushFlags;
 use hit_test::{HitTestingItem, HitTestingRun};
 use image::simplify_repeated_primitive;
 use internal_types::{FastHashMap, FastHashSet};
+// use lyon_path::{PathEvent};
+// use pathfinder_partitioner::{FillRule, Mesh, Partitioner};
 use picture::PictureCompositeMode;
 use prim_store::{BrushClipMaskKind, BrushKind, BrushPrimitive, BrushSegmentDescriptor};
 use prim_store::{EdgeAaSegmentMask, ImageSource};
 use prim_store::{BorderSource, BrushSegment, PictureIndex, PrimitiveContainer, PrimitiveIndex, PrimitiveStore};
-use prim_store::{OpacityBinding, ScrollNodeAndClipChain, TextRunPrimitiveCpu};
+use prim_store::{OpacityBinding, ScrollNodeAndClipChain, PathsPrimitive, TextRunPrimitiveCpu};
 use render_backend::{DocumentView};
 use resource_cache::{FontInstanceMap, ImageRequest};
 use scene::{Scene, ScenePipeline, StackingContextHelpers};
@@ -697,7 +699,14 @@ impl<'a> DisplayListFlattener<'a> {
                     &prim_info,
                 );
             }
-            SpecificDisplayItem::Path(ref info) => {
+            SpecificDisplayItem::Shapes => {
+                let shapes = self.get_shapes(item.shapes());
+                self.add_paths(
+                    clip_and_scroll,
+                    reference_frame_relative_offset,
+                    &prim_info,
+                    shapes
+                );
                 //FIXME: Implement this!
             }
             SpecificDisplayItem::Line(ref info) => {
@@ -1508,6 +1517,23 @@ impl<'a> DisplayListFlattener<'a> {
             PrimitiveContainer::Brush(prim),
         );
     }
+
+    pub fn add_paths(
+        &mut self,
+        clip_and_scroll: ScrollNodeAndClipChain,
+        paths_offset: LayoutVector2D,
+        info: &LayoutPrimitiveInfo,
+        shapes: Vec<Shape>
+    ) {
+        let prim = PathsPrimitive::new(shapes, paths_offset);
+            
+        self.add_primitive(
+            clip_and_scroll,
+            info,
+            Vec::new(),
+            PrimitiveContainer::Paths(prim)
+        );
+     }
 
     pub fn add_scroll_bar(
         &mut self,

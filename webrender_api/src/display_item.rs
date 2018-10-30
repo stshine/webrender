@@ -6,9 +6,9 @@
 use GlyphInstance;
 use euclid::{SideOffsets2D, TypedRect};
 use std::ops::Not;
-use {ColorF, FontInstanceKey, GlyphOptions, ImageKey, LayoutPixel, LayoutPoint, PathKey};
-use {LayoutRect, LayoutSize, LayoutTransform, LayoutVector2D, PipelineId, PropertyBinding};
-
+use {ColorF, FontInstanceKey, GlyphOptions, ImageKey, LayoutPixel, LayoutPoint};
+use {LayoutRect, LayoutSize, LayoutTransform, LayoutVector2D, PathKey, PipelineId};
+use {PropertyBinding, Shape};
 
 // NOTE: some of these structs have an "IMPLICIT" comment.
 // This indicates that the BuiltDisplayList will have serialized
@@ -97,7 +97,8 @@ pub enum SpecificDisplayItem {
     StickyFrame(StickyFrameDisplayItem),
     Rectangle(RectangleDisplayItem),
     ClearRectangle,
-    Path(PathDisplayItem),
+    Shapes,
+    // Path(PathDisplayItem),
     Line(LineDisplayItem),
     Text(TextDisplayItem),
     Image(ImageDisplayItem),
@@ -131,7 +132,8 @@ pub enum CompletelySpecificDisplayItem {
     StickyFrame(StickyFrameDisplayItem),
     Rectangle(RectangleDisplayItem),
     ClearRectangle,
-    Path(PathDisplayItem),
+    Shapes(Vec<Shape>),
+    // Path(PathDisplayItem),
     Line(LineDisplayItem),
     Text(TextDisplayItem, Vec<GlyphInstance>),
     Image(ImageDisplayItem),
@@ -251,10 +253,10 @@ pub enum LineStyle {
     Wavy,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
-pub struct PathDisplayItem {
-    pub path_key: PathKey,
-}
+// #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+// pub struct ShapesDisplayItem {
+//     pub packed_shapes: Vec<Shape>,
+// }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct TextDisplayItem {

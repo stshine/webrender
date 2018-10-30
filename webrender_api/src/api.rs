@@ -15,7 +15,7 @@ use {BuiltDisplayList, BuiltDisplayListDescriptor, ColorF, DeviceIntPoint, Devic
 use {DeviceUintSize, ExternalScrollId, FontInstanceKey, FontInstanceOptions};
 use {FontInstancePlatformOptions, FontKey, FontVariation, GlyphDimensions, GlyphIndex, ImageData};
 use {ImageDescriptor, ImageKey, ItemTag, LayoutPoint, LayoutSize, LayoutTransform, LayoutVector2D};
-use {NativeFontHandle, WorldPoint};
+use {NativeFontHandle, PathKey, WorldPoint};
 pub use lyon_path::default::Path;
 
 pub type TileSize = u16;
@@ -689,10 +689,6 @@ impl PipelineId {
         PipelineId(0, 0)
     }
 }
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct PathKey(pub IdNamespace, pub u32);
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]

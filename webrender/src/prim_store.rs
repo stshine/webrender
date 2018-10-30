@@ -8,6 +8,7 @@ use api::{FilterOp, GlyphInstance, GradientStop, ImageKey, ImageRendering, ItemR
 use api::{GlyphRasterSpace, LayoutPoint, LayoutRect, LayoutSize, LayoutToWorldTransform, LayoutVector2D};
 use api::{PipelineId, PremultipliedColorF, PropertyBinding, Shadow, YuvColorSpace, YuvFormat, DeviceIntSideOffsets};
 use api::{BorderWidths, LayoutToWorldScale, NormalBorder};
+use api::{Shape, ShapeKind};
 use app_units::Au;
 use border::{BorderCacheKey, BorderRenderTaskInfo};
 use box_shadow::BLUR_SAMPLE_SCALE;
@@ -25,12 +26,14 @@ use picture::{PictureCompositeMode, PictureId, PicturePrimitive};
 #[cfg(debug_assertions)]
 use render_backend::FrameId;
 use render_task::{BlitSource, RenderTask, RenderTaskCacheKey};
-use render_task::{RenderTaskCacheKeyKind, RenderTaskId, RenderTaskCacheEntryHandle};
+use render_task::{RenderTaskCacheKeyKind, RenderTaskId, RenderTaskCacheEntryHandle, RenderTaskLocation};
 use renderer::{MAX_VERTEX_TEXTURE_WIDTH};
 use resource_cache::{ImageProperties, ImageRequest, ResourceCache};
 use scene::SceneProperties;
 use segment::SegmentBuilder;
 use spatial_node::SpatialNode;
+use tiling::RenderTargetKind;
+use vector_rasterizer::{PathsCacheKey, build_mesh};
 use std::{mem, usize};
 use std::sync::Arc;
 use util::{MatrixHelpers, calculate_screen_bounding_rect};
@@ -147,6 +150,7 @@ pub struct PictureIndex(pub usize);
 pub enum PrimitiveKind {
     TextRun,
     Brush,
+    Paths,
 }
 
 impl GpuCacheHandle {
@@ -1113,10 +1117,27 @@ impl ClipData {
     }
 }
 
+pub struct PathsPrimitive {
+    pub shapes: Vec<Shape>,
+    pub offset: LayoutVector2D,
+    pub gpu_blocks: Vec<GpuBlockData>,
+}
+
+impl PathsPrimitive {
+    pub fn new(shapes: Vec<Shape>, offset: LayoutVector2D) -> Self {
+        Self {
+            shapes,
+            offset,
+            gpu_blocks: Vec::new(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum PrimitiveContainer {
     TextRun(TextRunPrimitiveCpu),
     Brush(BrushPrimitive),
+    Paths(PathsPrimitive)
 }
 
 impl PrimitiveContainer {
@@ -1208,6 +1229,7 @@ pub struct PrimitiveStore {
 
     /// A primitive index to chase through debugging.
     pub chase_id: Option<PrimitiveIndex>,
+    next_paths_id: u64,
 }
 
 impl PrimitiveStore {
@@ -1555,6 +1577,48 @@ impl PrimitiveStore {
         }
 
         match metadata.prim_kind {
+            PrimitiveKind::Paths => {
+                let shapes_prim = &mut self.cpu_shapes[metadata.cpu_prim_index.0];
+
+                let rect = metadata.local_rect;
+
+                let render_task_cache_key = RenderTaskCacheKey {
+                    size: rect.size,
+                    kind: RenderTaskCacheKeyKind::Paths(
+                        PathsCacheKey(self.next_paths_cache_key)
+                    ),
+                };
+                self.next_paths_id += 1;
+
+                frame_state.resource_cache.request_render_task(
+                    render_task_cache_key,
+                    frame_state.gpu_cache,
+                    frame_state.render_tasks,
+                    None,
+                    false,
+                    |render_tasks| {
+                        let scale = frame_context * LayoutToWorldScale::new(1.0);
+                        let meshs = build_mesh(
+                            shapes_prim.shapes,
+                            scale
+                        );
+                        let location = RenderTaskLocation::Dynamic(None, Some(rect.size));
+                        let paths_render_task = RenderTask::new_paths(
+                            location,
+                            meshs,
+                            rect.origin
+                        );
+                        let root_task_id = render_tasks.add(paths_render_task);
+                        frame_state.special_render_passes.color_glyph_pass.add_render_task(
+                            root_task_id,
+                            rect.size,
+                            RenderTargetKind::Color
+                        );
+                        Ok(root_task_id)
+                    }
+                );
+            }
+            
             PrimitiveKind::TextRun => {
                 let text = &mut self.cpu_text_runs[metadata.cpu_prim_index.0];
                 // The transform only makes sense for screen space rasterization

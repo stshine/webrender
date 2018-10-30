@@ -22,7 +22,7 @@ use {ImageRendering, LayoutPoint, LayoutPrimitiveInfo, LayoutRect, LayoutSize, L
 use {LayoutVector2D, LineDisplayItem, LineOrientation, LineStyle, MixBlendMode, PipelineId};
 use {PropertyBinding, PushReferenceFrameDisplayListItem, PushStackingContextDisplayItem};
 use {RadialGradient, RadialGradientDisplayItem, RectangleDisplayItem, ReferenceFrame};
-use {ScrollFrameDisplayItem, ScrollSensitivity, Shadow, SpecificDisplayItem, StackingContext};
+use {ScrollFrameDisplayItem, ScrollSensitivity, Shape, Shadow, SpecificDisplayItem, StackingContext};
 use {StickyFrameDisplayItem, StickyOffsetBounds, TextDisplayItem, TransformStyle, YuvColorSpace};
 use {YuvData, YuvImageDisplayItem};
 
@@ -99,6 +99,7 @@ pub struct BuiltDisplayListIter<'a> {
     cur_filters: ItemRange<FilterOp>,
     cur_clip_chain_items: ItemRange<ClipId>,
     cur_complex_clip: (ItemRange<ComplexClipRegion>, usize),
+    cur_shapes: ItemRange<Shape>,
     peeking: Peek,
 }
 
@@ -220,6 +221,7 @@ impl<'a> BuiltDisplayListIter<'a> {
             cur_filters: ItemRange::default(),
             cur_clip_chain_items: ItemRange::default(),
             cur_complex_clip: (ItemRange::default(), 0),
+            cur_shapes: ItemRange::default(),
             peeking: Peek::NotPeeking,
         }
     }
@@ -286,6 +288,9 @@ impl<'a> BuiltDisplayListIter<'a> {
                 self.cur_complex_clip = self.skip_slice::<ComplexClipRegion>()
             }
             Text(_) => self.cur_glyphs = self.skip_slice::<GlyphInstance>().0,
+            Shapes => {
+                self.skip_slice::<Shape>().0;
+            }
             PushStackingContext(_) => self.cur_filters = self.skip_slice::<FilterOp>().0,
             _ => { /* do nothing */ }
         }
@@ -388,6 +393,10 @@ impl<'a, 'b> DisplayItemRef<'a, 'b> {
         self.iter.cur_glyphs
     }
 
+    pub fn shapes(&self) -> ItemRange<Shape> {
+        self.iter.cur_shapes
+    }
+
     pub fn filters(&self) -> ItemRange<FilterOp> {
         self.iter.cur_filters
     }
@@ -476,7 +485,9 @@ impl Serialize for BuiltDisplayList {
                     SpecificDisplayItem::StickyFrame(v) => StickyFrame(v),
                     SpecificDisplayItem::Rectangle(v) => Rectangle(v),
                     SpecificDisplayItem::ClearRectangle => ClearRectangle,
-                    SpecificDisplayItem::Path(v) => Path(v),
+                    SpecificDisplayItem::Shapes => Shapes(
+                        item.iter.list.get(item.iter.cur_shapes).collect()
+                    ),
                     SpecificDisplayItem::Line(v) => Line(v),
                     SpecificDisplayItem::Text(v) => Text(
                         v,
@@ -556,7 +567,6 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                     }
                     Rectangle(specific_item) => SpecificDisplayItem::Rectangle(specific_item),
                     ClearRectangle => SpecificDisplayItem::ClearRectangle,
-                    Path(specific_item) => SpecificDisplayItem::Path(specific_item),
                     Line(specific_item) => SpecificDisplayItem::Line(specific_item),
                     Text(specific_item, glyphs) => {
                         DisplayListBuilder::push_iter_impl(&mut temp, glyphs);
@@ -584,6 +594,10 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                         SpecificDisplayItem::PushReferenceFrame(specific_item)
                     }
                     PopReferenceFrame => SpecificDisplayItem::PopReferenceFrame,
+                    Shapes(shapes) => {
+                        DisplayListBuilder::push_iter_impl(&mut temp, shapes);
+                        SpecificDisplayItem::Shapes
+                    }
                     SetGradientStops(stops) => {
                         DisplayListBuilder::push_iter_impl(&mut temp, stops);
                         SpecificDisplayItem::SetGradientStops

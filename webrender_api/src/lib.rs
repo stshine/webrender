@@ -35,6 +35,7 @@ mod display_item;
 mod display_list;
 mod font;
 mod image;
+mod shape;
 mod units;
 
 pub use api::*;
@@ -44,3 +45,4 @@ pub use display_list::*;
 pub use font::*;
 pub use image::*;
 pub use units::*;
+pub use shape::*;

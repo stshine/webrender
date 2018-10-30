@@ -14,13 +14,13 @@ use euclid::{TypedPoint2D, TypedVector2D};
 use gpu_cache::{GpuCache};
 use gpu_types::{BorderInstance, BlurDirection, BlurInstance, PrimitiveHeaders, TransformData, TransformPalette};
 use internal_types::{FastHashMap, SavedTargetIndex, SourceTexture};
-#[cfg(feature = "pathfinder")]
+// #[cfg(feature = "pathfinder")]
 use pathfinder_partitioner::mesh::Mesh;
 use prim_store::{PrimitiveIndex, PrimitiveKind, PrimitiveStore};
 use prim_store::{BrushKind, DeferredResolve};
 use profiler::FrameProfileCounters;
 use render_task::{BlitSource, RenderTaskAddress, RenderTaskId, RenderTaskKind};
-use render_task::{BlurTask, ClearMode, GlyphTask, RenderTaskLocation, RenderTaskTree};
+use render_task::{BlurTask, ClearMode, GlyphTask, PathsTask, RenderTaskLocation, RenderTaskTree};
 use resource_cache::ResourceCache;
 use std::{cmp, usize, f32, i32, mem};
 use texture_allocator::GuillotineAllocator;
@@ -289,6 +289,14 @@ pub struct GlyphJob {
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
 pub struct GlyphJob;
+
+#[cfg_attr(feature = "capture", derive(Serialize))]
+#[cfg_attr(feature = "replay", derive(Deserialize))]
+pub struct PathsJob {
+    pub meshs: Vec<Mesh>,
+    pub target_rect: DeviceIntRect,
+    pub origin: DeviceIntPoint,
+}
 
 /// A render target represents a number of rendering operations on a surface.
 #[cfg_attr(feature = "capture", derive(Serialize))]
@@ -708,6 +716,9 @@ impl TextureCacheRenderTarget {
             RenderTaskKind::Glyph(ref mut task_info) => {
                 self.add_glyph_task(task_info, target_rect.0)
             }
+            RenderTaskKind::Paths(ref mut task_info) => {
+                self.add_paths_task(task_info, target_rect.0)
+            }
             RenderTaskKind::VerticalBlur(..) |
             RenderTaskKind::Picture(..) |
             RenderTaskKind::ClipRegion(..) |
@@ -719,6 +730,15 @@ impl TextureCacheRenderTarget {
         }
     }
 
+    fn add_paths_task(&mut self, task_info: &mut PathsTask, target_rect: DeviceIntRect) {
+        self.glyphs.push(PathsJob {
+            mesh: task_info.mesh.take().unwrap(),
+            target_rect: target_rect,
+            origin: task_info.origin,
+        })
+    }
+    
+    
     #[cfg(feature = "pathfinder")]
     fn add_glyph_task(&mut self, task_info: &mut GlyphTask, target_rect: DeviceIntRect) {
         self.glyphs.push(GlyphJob {

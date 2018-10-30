@@ -804,6 +804,24 @@ impl ResourceCache {
         }
     }
 
+    pub fn request_shapes(
+        &mut self,
+        shapes: Vec<Shape>,
+        gpu_cache: &mut GpuCache,
+        rect: LayoutRect,
+        render_tasks: &mut RenderTaskTree,
+    ) {
+        self.vector_rasterizer.request_shapes(
+            &mut self.cached_paths,
+            shapes,
+            rect,
+            &mut self.texture_cache,
+            gpu_cache,
+            &mut self.cached_render_tasks,
+            &mut render_tasks,
+        );
+    }
+
     pub fn request_glyphs(
         &mut self,
         mut font: FontInstance,
